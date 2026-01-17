@@ -61,6 +61,20 @@
         <div x-show="activeTab === 'home'" class="page-container">
             <div id="map" class="map-container"></div>
             
+            <!-- Tile Provider Selector -->
+            <div class="tile-selector" x-data="{ selectedProvider: 'cartodb-voyager' }">
+                <label for="tileProvider">Map Style:</label>
+                <select id="tileProvider" 
+                        x-model="selectedProvider"
+                        @change="setTileProvider(selectedProvider)">
+                    <option value="cartodb-voyager">CartoDB Voyager</option>
+                    <option value="cartodb-positron">CartoDB Positron (Light)</option>
+                    <option value="osm-hot">OpenStreetMap HOT</option>
+                    <option value="osm-standard">OpenStreetMap Standard</option>
+                    <option value="opentopomap">OpenTopoMap</option>
+                </select>
+            </div>
+            
             <!-- Location Permission Status (optional feedback) -->
             <div x-data="{ showStatus: false, message: '' }" 
                  x-show="showStatus" 

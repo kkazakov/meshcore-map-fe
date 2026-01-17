@@ -6,11 +6,46 @@
 // Constants
 const DEFAULT_CENTER = [42.6977, 23.3219]; // Sofia, Bulgaria
 const DEFAULT_ZOOM = 15;
-const TILE_LAYER_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_LAYER_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-// Global map instance
+// Tile provider configurations
+const TILE_PROVIDERS = {
+  'osm-hot': {
+    name: 'OpenStreetMap HOT',
+    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles courtesy of <a href="http://hot.openstreetmap.org/">Humanitarian OpenStreetMap Team</a>',
+    maxZoom: 19
+  },
+  'osm-standard': {
+    name: 'OpenStreetMap Standard',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  },
+  'cartodb-voyager': {
+    name: 'CartoDB Voyager',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    maxZoom: 20
+  },
+  'cartodb-positron': {
+    name: 'CartoDB Positron (Light)',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    maxZoom: 20
+  },
+  'opentopomap': {
+    name: 'OpenTopoMap',
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+    maxZoom: 17
+  }
+};
+
+const DEFAULT_TILE_PROVIDER = 'cartodb-voyager';
+
+// Global map instance and current tile layer
 let map = null;
+let currentTileLayer = null;
 
 /**
  * Initialize the map with user location or default center
@@ -20,17 +55,38 @@ function initMap() {
   // Initialize map centered on Sofia (default)
   map = L.map('map').setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
-  // Add OpenStreetMap tile layer
-  L.tileLayer(TILE_LAYER_URL, {
-    attribution: TILE_LAYER_ATTRIBUTION,
-    maxZoom: 19,
-    minZoom: 3
-  }).addTo(map);
+  // Add default tile layer
+  setTileProvider(DEFAULT_TILE_PROVIDER);
 
   // Try to get user's location
   getUserLocation();
 
   return map;
+}
+
+/**
+ * Set or change the tile provider
+ * @param {string} providerId - The ID of the tile provider to use
+ */
+function setTileProvider(providerId) {
+  const provider = TILE_PROVIDERS[providerId];
+  
+  if (!provider) {
+    console.error('Invalid tile provider:', providerId);
+    return;
+  }
+
+  // Remove existing tile layer if present
+  if (currentTileLayer) {
+    map.removeLayer(currentTileLayer);
+  }
+
+  // Add new tile layer
+  currentTileLayer = L.tileLayer(provider.url, {
+    attribution: provider.attribution,
+    maxZoom: provider.maxZoom,
+    minZoom: 3
+  }).addTo(map);
 }
 
 /**
