@@ -1,13 +1,9 @@
-/**
- * Meshcore Map Application
- * Main application logic for map initialization and geolocation
- */
 
-// Constants
 const DEFAULT_CENTER = [42.6977, 23.3219]; // Sofia, Bulgaria
-const DEFAULT_ZOOM = 15;
+const DEFAULT_ZOOM = 18;
 
-// Tile provider configurations with light/dark variants
+console.log('DEFAULT_ZOOM set to:', DEFAULT_ZOOM);
+
 const TILE_PROVIDERS = {
   'osm-hot': {
     name: 'OpenStreetMap HOT',
@@ -78,16 +74,15 @@ const TILE_PROVIDERS = {
 
 const DEFAULT_TILE_PROVIDER = 'cartodb-voyager';
 
-// Global variables
 let currentTileProviderId = DEFAULT_TILE_PROVIDER;
 
-// Global map instance
 let map = null;
 let currentTileLayer = null;
+let geohashOverlayLayer = null;
+const GEOHASH_PRECISION = 8;
+const MIN_ZOOM_FOR_OVERLAY = 18;
+const activeGeohashes = new Set(['sx8d9x3s']); // temporary
 
-/**
- * Initialize theme based on user preference or system preference
- */
 function initTheme() {
   const savedTheme = localStorage.getItem('theme');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -98,21 +93,15 @@ function initTheme() {
   return theme;
 }
 
-/**
- * Set the theme
- * @param {string} theme - 'light' or 'dark'
- */
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
   
-  // Update map tiles to match theme
   updateMapTheme();
+  
+  updateGeohashOverlay();
 }
 
-/**
- * Toggle between light and dark theme
- */
 function toggleTheme() {
   const currentTheme = document.documentElement.getAttribute('data-theme');
   const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -120,27 +109,18 @@ function toggleTheme() {
   return newTheme;
 }
 
-/**
- * Initialize the map with user location or default center
- * @returns {L.Map} The Leaflet map instance
- */
 function initMap() {
-  // Initialize map centered on Sofia (default)
   map = L.map('map').setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+  
+  console.log(`Map initialized at zoom level: ${DEFAULT_ZOOM}`);
 
-  // Add default tile layer
   setTileProvider(DEFAULT_TILE_PROVIDER);
 
-  // Try to get user's location
   getUserLocation();
 
   return map;
 }
 
-/**
- * Set or change the tile provider
- * @param {string} providerId - The ID of the tile provider to use
- */
 function setTileProvider(providerId) {
   const provider = TILE_PROVIDERS[providerId];
   
@@ -149,39 +129,30 @@ function setTileProvider(providerId) {
     return;
   }
 
-  // Store the current provider ID
   currentTileProviderId = providerId;
 
-  // Get current theme
   const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
   const themeConfig = provider[currentTheme];
 
-  // Remove existing tile layer if present
   if (currentTileLayer) {
     map.removeLayer(currentTileLayer);
   }
 
-  // Add new tile layer with theme-specific configuration
   currentTileLayer = L.tileLayer(themeConfig.url, {
     attribution: themeConfig.attribution,
     maxZoom: themeConfig.maxZoom,
     minZoom: 3
   }).addTo(map);
+  
+  updateGeohashOverlay();
 }
 
-/**
- * Update map tiles based on current theme
- */
 function updateMapTheme() {
   if (map && currentTileProviderId) {
     setTileProvider(currentTileProviderId);
   }
 }
 
-/**
- * Request user's geolocation and update map center
- * Falls back to Sofia, Bulgaria if permission denied or unavailable
- */
 function getUserLocation() {
   if (!navigator.geolocation) {
     console.warn('Geolocation is not supported by this browser');
@@ -190,18 +161,15 @@ function getUserLocation() {
   }
 
   navigator.geolocation.getCurrentPosition(
-    // Success callback
     (position) => {
       const { latitude, longitude } = position.coords;
       const userLocation = [latitude, longitude];
       
-      // Update map center to user's location
       map.setView(userLocation, DEFAULT_ZOOM);
       
       console.log('User location:', userLocation);
-      showLocationStatus('Location found!');
+      console.log(`Map centered at user location with zoom level: ${DEFAULT_ZOOM}`);
     },
-    // Error callback
     (error) => {
       console.warn('Geolocation error:', error.message);
       
@@ -221,7 +189,6 @@ function getUserLocation() {
       
       showLocationStatus(errorMessage);
     },
-    // Options
     {
       enableHighAccuracy: true,
       timeout: 5000,
@@ -230,29 +197,156 @@ function getUserLocation() {
   );
 }
 
-/**
- * Show location status message to user
- * @param {string} message - The message to display
- */
+
 function showLocationStatus(message) {
   const statusEl = document.getElementById('locationStatus');
   if (!statusEl) return;
   
-  // Use Alpine.js reactive data if available
   const component = Alpine.$data(statusEl);
   if (component) {
     component.message = message;
     component.showStatus = true;
     
-    // Hide after 4 seconds
     setTimeout(() => {
       component.showStatus = false;
     }, 4000);
   }
 }
 
-// Initialize theme and map when DOM is ready
+function getGeohashBorderColor() {
+  const theme = document.documentElement.getAttribute('data-theme') || 'light';
+  const provider = currentTileProviderId;
+  
+  if (theme === 'dark' || provider === 'cartodb-voyager' || provider === 'cartodb-positron') {
+    return '#a0a0a0';
+  }
+  
+  return '#404040';
+}
+
+// function toggleGeohash(hash) {
+//   if (activeGeohashes.has(hash)) {
+//     activeGeohashes.delete(hash);
+//   } else {
+//     activeGeohashes.add(hash);
+//   }
+//   updateGeohashOverlay();
+// }
+
+function getVisibleGeohashes(bounds, precision) {
+  const geohashSet = new Set();
+  
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+  
+  const centerLat = (sw.lat + ne.lat) / 2;
+  const centerLng = (sw.lng + ne.lng) / 2;
+  const centerHash = geohash.encode(centerLat, centerLng, precision);
+  const centerBounds = geohash.decode_bbox(centerHash);
+  
+  const geohashLatHeight = centerBounds[2] - centerBounds[0];
+  const geohashLngWidth = centerBounds[3] - centerBounds[1];
+  
+  const latStep = geohashLatHeight * 0.5;
+  const lngStep = geohashLngWidth * 0.5;
+  
+  for (let lat = sw.lat; lat <= ne.lat; lat += latStep) {
+    for (let lng = sw.lng; lng <= ne.lng; lng += lngStep) {
+      const hash = geohash.encode(lat, lng, precision);
+      geohashSet.add(hash);
+    }
+  }
+  
+  return Array.from(geohashSet);
+}
+
+function drawGeohashOverlay() {
+  if (geohashOverlayLayer) {
+    map.removeLayer(geohashOverlayLayer);
+  }
+  
+  const currentZoom = map.getZoom();
+  if (currentZoom < MIN_ZOOM_FOR_OVERLAY) {
+    return;
+  }
+  
+  geohashOverlayLayer = L.layerGroup();
+  
+  const bounds = map.getBounds();
+  
+  const visibleGeohashes = getVisibleGeohashes(bounds, GEOHASH_PRECISION);
+  
+  const MAX_SQUARES = 3000;
+  if (visibleGeohashes.length > MAX_SQUARES) {
+    console.warn(`Too many geohashes (${visibleGeohashes.length}). Zoom in more to see the overlay.`);
+    return;
+  }
+  
+  console.log(`Rendering ${visibleGeohashes.length} geohash squares`);
+  console.log(`Active geohashes:`, Array.from(activeGeohashes));
+  console.log(`Is sx83p2bb in visible geohashes?`, visibleGeohashes.includes('sx83p2bb'));
+  
+  const borderColor = getGeohashBorderColor();
+  
+  visibleGeohashes.forEach(hash => {
+    const isActive = activeGeohashes.has(hash);
+    
+    if (!isActive) {
+      return;
+    }
+    
+    const hashBounds = geohash.decode_bbox(hash);
+    
+    const sw = [hashBounds[0], hashBounds[1]];
+    const ne = [hashBounds[2], hashBounds[3]];
+    
+    if (hash === 'sx83p2bb') {
+      console.log(`Found sx83p2bb! isActive: ${isActive}`);
+      console.log(`Bounds:`, hashBounds);
+    }
+    
+    const rectangle = L.rectangle([sw, ne], {
+      color: borderColor,
+      weight: 1,
+      fillColor: '#3388ff',
+      fillOpacity: 0.5,
+      interactive: true
+    });
+    
+    // rectangle.on('click', () => {
+    //   toggleGeohash(hash);
+    // });
+    
+    rectangle.bindTooltip(hash, {
+      permanent: false,
+      direction: 'center',
+      className: 'geohash-tooltip'
+    });
+    
+    geohashOverlayLayer.addLayer(rectangle);
+  });
+  
+  geohashOverlayLayer.addTo(map);
+}
+
+function updateGeohashOverlay() {
+  if (map) {
+    drawGeohashOverlay();
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initMap();
+  
+  map.on('moveend', updateGeohashOverlay);
+  map.on('zoomend', () => {
+    const currentZoom = map.getZoom();
+    console.log(`Zoom changed to level: ${currentZoom}`);
+    updateGeohashOverlay();
+  });
+  
+  console.log(`Current zoom level: ${map.getZoom()}`);
+  
+  updateGeohashOverlay();
 });
