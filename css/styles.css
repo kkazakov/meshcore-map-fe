@@ -108,11 +108,35 @@ body {
   background-color: var(--secondary-color);
 }
 
+/* GitHub link specific styles */
+.github-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.github-link svg {
+  width: 24px;
+  height: 24px;
+  fill: var(--text-light);
+  transition: fill 0.2s ease;
+}
+
+.github-link:hover svg {
+  fill: #ffffff;
+}
+
+/* Prevent active state on external GitHub link */
+.github-link.active {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 /* ========================================
-   Map Container
+   Page Container
    ======================================== */
 
-.map-container {
+.page-container {
   width: 100%;
   height: 100%;
   position: absolute;
@@ -120,10 +144,46 @@ body {
   left: 0;
 }
 
+/* ========================================
+   Map Container
+   ======================================== */
+
+.map-container {
+  width: 100%;
+  height: 100%;
+}
+
 /* Ensure Leaflet map fills container */
 #map {
   height: 100%;
   width: 100%;
+}
+
+/* ========================================
+   Help Page
+   ======================================== */
+
+.help-page {
+  background-color: #fff;
+  overflow-y: auto;
+}
+
+.help-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.help-content h2 {
+  color: var(--primary-color);
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.help-content p {
+  line-height: 1.6;
+  color: var(--text-color);
+  font-size: 1rem;
 }
 
 /* ========================================
@@ -172,6 +232,11 @@ body {
     font-size: 0.9rem;
   }
 
+  .github-link svg {
+    width: 20px;
+    height: 20px;
+  }
+
   .location-status {
     top: 0.5rem;
     padding: 0.5rem 1rem;
@@ -198,6 +263,15 @@ body {
   .menu-item {
     padding: 0.3rem 0.6rem;
     font-size: 0.85rem;
+  }
+
+  .github-link {
+    padding: 0.3rem 0.5rem;
+  }
+
+  .github-link svg {
+    width: 18px;
+    height: 18px;
   }
 }
 
