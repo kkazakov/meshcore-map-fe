@@ -8,8 +8,22 @@ Meshcore Map Frontend is a lightweight web application for map visualization usi
 
 ## Technology Stack
 
-- **JavaScript Framework**: Alpine.js (CDN-based, no build step)
-- **Map Library**: Leaflet.js
+- **JavaScript Framework**: Alpine.js 3.x (CDN-based, no build step)
+  - Lightweight reactive framework (~15kb minified)
+  - Declarative syntax with `x-` directives in HTML
+  - Perfect for adding interactivity without a build process
+  - CDN: `https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js`
+  
+- **Map Library**: Leaflet.js 1.9.4
+  - Leading open-source JavaScript library for interactive maps
+  - Mobile-friendly, performant, well-documented
+  - Supports plugins and extensions
+  - CDN: `https://unpkg.com/leaflet@1.9.4/dist/leaflet.js`
+  
+- **Map Tiles**: OpenStreetMap
+  - Free, collaborative map data
+  - Tile server: `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`
+  
 - **Architecture**: Single-page application (SPA) with vanilla HTML/CSS/JS
 - **No Build Tools**: Development uses direct HTML files (for now)
 
@@ -104,7 +118,7 @@ Currently no test framework configured. When adding tests, consider:
 **Example**:
 ```javascript
 const DEFAULT_CENTER = [42.6977, 23.3219]; // Sofia, Bulgaria
-const DEFAULT_ZOOM = 13;
+const DEFAULT_ZOOM = 15;
 
 async function initializeMap() {
   const map = L.map('map');
@@ -124,7 +138,7 @@ async function initializeMap() {
 document.addEventListener('alpine:init', () => {
   Alpine.store('map', {
     center: null,
-    zoom: 13,
+    zoom: 15,
     setCenter(lat, lng) {
       this.center = [lat, lng];
     }
@@ -171,7 +185,9 @@ if (navigator.geolocation) {
 ## Comments and Documentation
 
 **When to Comment**:
-- Never comment
+- Complex algorithms or business logic
+- Non-obvious workarounds
+- Public API functions
 
 **JSDoc for Functions**:
 ```javascript
