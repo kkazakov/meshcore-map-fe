@@ -1,0 +1,225 @@
+/**
+ * Meshcore Map Styles
+ * Main stylesheet for the application
+ */
+
+/* ========================================
+   CSS Reset & Base Styles
+   ======================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #333;
+  background-color: #f5f5f5;
+}
+
+/* ========================================
+   CSS Variables
+   ======================================== */
+
+:root {
+  --primary-color: #2c3e50;
+  --secondary-color: #3498db;
+  --accent-color: #e74c3c;
+  --text-color: #333;
+  --text-light: #fff;
+  --border-color: #ddd;
+  --menu-height: 60px;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   Layout
+   ======================================== */
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  position: relative;
+  height: calc(100vh - var(--menu-height));
+}
+
+/* ========================================
+   Top Menu Component
+   ======================================== */
+
+.top-menu {
+  height: var(--menu-height);
+  background-color: var(--primary-color);
+  color: var(--text-light);
+  box-shadow: var(--shadow);
+  position: relative;
+  z-index: 1000;
+}
+
+.menu-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.menu-brand h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.menu-items {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.menu-item {
+  color: var(--text-light);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-item.active {
+  background-color: var(--secondary-color);
+}
+
+/* ========================================
+   Map Container
+   ======================================== */
+
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Ensure Leaflet map fills container */
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+/* ========================================
+   Location Status Component
+   ======================================== */
+
+.location-status {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  z-index: 1001;
+  max-width: 90%;
+  text-align: center;
+}
+
+.location-status p {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+@media (max-width: 768px) {
+  .menu-container {
+    padding: 0 1rem;
+  }
+
+  .menu-brand h1 {
+    font-size: 1.2rem;
+  }
+
+  .menu-items {
+    gap: 1rem;
+  }
+
+  .menu-item {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .location-status {
+    top: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .location-status p {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --menu-height: 50px;
+  }
+
+  .menu-brand h1 {
+    font-size: 1rem;
+  }
+
+  .menu-items {
+    gap: 0.5rem;
+  }
+
+  .menu-item {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* ========================================
+   Leaflet Customization
+   ======================================== */
+
+/* Ensure Leaflet controls are visible */
+.leaflet-control-zoom {
+  margin-top: 1rem;
+  margin-left: 1rem;
+}
+
+.leaflet-control-attribution {
+  background-color: rgba(255, 255, 255, 0.8);
+  font-size: 0.7rem;
+}
+
+/* ========================================
+   Utilities
+   ======================================== */
+
+[x-cloak] {
+  display: none !important;
+}
